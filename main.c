@@ -4,8 +4,6 @@
 
 #define HEAP_SIZE 4096
 
-typedef char byte;
-
 static byte heap[HEAP_SIZE];
 
 int main() {

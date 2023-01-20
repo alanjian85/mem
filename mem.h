@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+typedef char byte;
+
 void mem_init(void *heap, size_t size);
 
 void *mem_alloc(size_t size);

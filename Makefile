@@ -1,2 +1,2 @@
 all: main.c
-	$(CC) main.c -o mem
+	$(CC) main.c mem.c -o mem
