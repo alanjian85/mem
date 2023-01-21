@@ -54,5 +54,20 @@ void *mem_alloc(size_t size) {
 void mem_free(void *ptr) {
     ptr -= sizeof(size_t);
     assert(*((size_t *) ptr) & 0x1);
-    *((size_t *) ptr) &= ~0x1; 
+    *((size_t *) ptr) &= ~0x1;
+    size_t size = *((size_t *) ptr);
+    void *end = ptr + size;
+    *((size_t *) end - 1) &= ~0x1;    
+
+    size_t prev_tag = *((size_t *) ptr - 1);
+    if ((prev_tag & 0x1) == 0x0) {
+        *((size_t *) (ptr - prev_tag)) += size;   
+        *((size_t *) end - 1) += prev_tag; 
+    }
+
+    size_t next_tag = *((size_t *) end);
+    if ((next_tag & 0x1) == 0x0) {
+        *((size_t *) ptr) += next_tag; 
+        *((size_t *) (end + next_tag) - 1) += size;
+    }
 }
