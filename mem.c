@@ -20,11 +20,11 @@ void mem_init(void *heap, size_t size) {
     heap_end = heap_start + size;
 
     *((size_t *) heap_start) = size | 0x0;
-    *((size_t *) heap_end - sizeof(size_t)) = size;
+    *((size_t *) heap_end - sizeof(size_t)) = size | 0x0;
 }
 
 void *mem_alloc(size_t size) {
-    size += sizeof(size_t);
+    size += sizeof(size_t) << 1;
     size = align(size, 16);
     void *ptr = heap_start;
     size_t seg_size = 0;
@@ -36,16 +36,17 @@ void *mem_alloc(size_t size) {
         seg_size = *((size_t *) ptr) & ~0x1;
         allocated = *((size_t *) ptr) & 0x1;
     } while (seg_size < size || allocated);
-    void *end = ptr + size;
     seg_size -= size;
     if (seg_size < sizeof(size_t)) {
         size += seg_size;
         seg_size = 0;
     } 
+    void *end = ptr + size;
     *((size_t *) ptr) = size | 0x1;
+    *((size_t *) end - sizeof(size_t)) = size | 0x1;
     if (seg_size > 0) {
         *((size_t *) end) = seg_size | 0x0;
-        *((size_t *) end + seg_size - sizeof(size_t)) = seg_size;
+        *((size_t *) (end + seg_size - sizeof(size_t))) = seg_size | 0x0;
     }
     return ptr + 1;
 }
