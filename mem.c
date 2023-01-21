@@ -20,7 +20,7 @@ void mem_init(void *heap, size_t size) {
     heap_end = heap_start + size;
 
     *((size_t *) heap_start) = size | 0x0;
-    *((size_t *) heap_end - sizeof(size_t)) = size | 0x0;
+    *((size_t *) heap_end - 1) = size | 0x0;
 }
 
 void *mem_alloc(size_t size) {
@@ -43,16 +43,16 @@ void *mem_alloc(size_t size) {
     } 
     void *end = ptr + size;
     *((size_t *) ptr) = size | 0x1;
-    *((size_t *) end - sizeof(size_t)) = size | 0x1;
+    *((size_t *) end - 1) = size | 0x1;
     if (block_size > 0) {
         *((size_t *) end) = block_size | 0x0;
-        *((size_t *) (end + block_size - sizeof(size_t))) = block_size | 0x0;
+        *((size_t *) (end + block_size) - 1) = block_size | 0x0;
     }
-    return ptr + 1;
+    return ptr + sizeof(size_t);
 }
 
 void mem_free(void *ptr) {
-    --ptr;
+    ptr -= sizeof(size_t);
     assert(*((size_t *) ptr) & 0x1);
-    *((size_t *) ptr) &= ~0x1;
+    *((size_t *) ptr) &= ~0x1; 
 }
