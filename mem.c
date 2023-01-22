@@ -27,15 +27,16 @@ void *mem_alloc(size_t size) {
     size += sizeof(size_t) << 1;
     size = align(size, 16);
     size_t *ptr = heap_start;
-    size_t block_size = 0;
-    bool allocated;
-    do {
-        ptr = (void *) ptr + block_size;
-        if (ptr >= heap_end)
-            return NULL;
+    size_t block_size;
+    while (ptr < heap_end) {
         block_size = *ptr & ~0x1;
-        allocated = *ptr & 0x1;
-    } while (block_size < size || allocated);
+        bool allocated = *ptr & 0x1;
+        if (block_size >= size && !allocated)
+            break;
+        ptr = (void *) ptr + block_size;
+    }
+    if (ptr >= heap_end)
+        return NULL;
     block_size -= size;
     if (block_size < sizeof(size_t)) {
         size += block_size;
