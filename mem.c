@@ -4,9 +4,9 @@
 
 #include "assert.h"
 
-static void *heap_start, *heap_end;
+static size_t *heap_start, *heap_end;
 
-size_t align(size_t x, size_t n) {
+static inline size_t align(size_t x, size_t n) {
     size_t rem = x % n;
     if (rem != 0)
         x += n - rem;
@@ -16,58 +16,58 @@ size_t align(size_t x, size_t n) {
 void mem_init(void *heap, size_t size) {
     assert((size & 0x1) == 0);
 
-    heap_start = heap;
-    heap_end = heap_start + size;
+    heap_start = (size_t *) heap;
+    heap_end = (size_t *) (heap + size);
 
-    *((size_t *) heap_start) = size | 0x0;
-    *((size_t *) heap_end - 1) = size | 0x0;
+    *heap_start = size | 0x0;
+    *(heap_end - 1) = size | 0x0;
 }
 
 void *mem_alloc(size_t size) {
     size += sizeof(size_t) << 1;
     size = align(size, 16);
-    void *ptr = heap_start;
+    size_t *ptr = heap_start;
     size_t block_size = 0;
     bool allocated;
     do {
-        ptr += block_size;
+        ptr = (size_t *) ((void *) ptr + block_size);
         if (ptr >= heap_end)
             return NULL;
-        block_size = *((size_t *) ptr) & ~0x1;
-        allocated = *((size_t *) ptr) & 0x1;
+        block_size = *ptr & ~0x1;
+        allocated = *ptr & 0x1;
     } while (block_size < size || allocated);
     block_size -= size;
     if (block_size < sizeof(size_t)) {
         size += block_size;
         block_size = 0;
     } 
-    void *end = ptr + size;
-    *((size_t *) ptr) = size | 0x1;
-    *((size_t *) end - 1) = size | 0x1;
+    size_t *end = (size_t *) ((void *) ptr + size);
+    *ptr = size | 0x1;
+    *(end - 1) = size | 0x1;
     if (block_size > 0) {
-        *((size_t *) end) = block_size | 0x0;
-        *((size_t *) (end + block_size) - 1) = block_size | 0x0;
+        *end = block_size | 0x0;
+        *((size_t *) ((void *) end + block_size) - 1) = block_size | 0x0;
     }
-    return ptr + sizeof(size_t);
+    return ptr + 1;
 }
 
 void mem_free(void *ptr) {
-    ptr -= sizeof(size_t);
-    assert(*((size_t *) ptr) & 0x1);
-    *((size_t *) ptr) &= ~0x1;
-    size_t size = *((size_t *) ptr);
-    void *end = ptr + size;
-    *((size_t *) end - 1) &= ~0x1;    
+    size_t *block = (size_t *) (ptr - sizeof(size_t));
+    assert(*block & 0x1);
+    *block &= ~0x1;
+    size_t size = *block;
+    size_t *end = (size_t *) ((void *) block + size);
+    *(end - 1) &= ~0x1;    
 
-    size_t prev_tag = *((size_t *) ptr - 1);
+    size_t prev_tag = *(block - 1);
     if ((prev_tag & 0x1) == 0x0) {
-        *((size_t *) (ptr - prev_tag)) += size;   
-        *((size_t *) end - 1) += prev_tag; 
+        *((size_t *) ((void *) block - prev_tag)) += size;   
+        *(end - 1) += prev_tag; 
     }
 
-    size_t next_tag = *((size_t *) end);
+    size_t next_tag = *end;
     if ((next_tag & 0x1) == 0x0) {
-        *((size_t *) ptr) += next_tag; 
-        *((size_t *) (end + next_tag) - 1) += size;
+        *block += next_tag; 
+        *((size_t *) ((void *) end + next_tag) - 1) += size;
     }
 }
