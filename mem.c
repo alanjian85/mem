@@ -16,7 +16,7 @@ static inline size_t align(size_t x, size_t n) {
 void mem_init(void *heap, size_t size) {
     assert((size & 0x1) == 0);
 
-    heap_start = heap;
+    heap_start = (size_t *) align((size_t) heap + 1, 16) - 1;
     heap_end = heap + size;
 
     *heap_start = size | 0x0;
