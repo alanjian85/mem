@@ -62,13 +62,15 @@ void mem_free(void *ptr) {
 
     size_t prev_tag = *(block - 1);
     if ((prev_tag & 0x1) == 0x0) {
-        *((size_t *) ((void *) block - prev_tag)) += size;   
-        *(end - 1) += prev_tag; 
+        size += prev_tag;
+        block = (void *) block - prev_tag;
+        *block = *(end - 1) = size; 
     }
 
     size_t next_tag = *end;
     if ((next_tag & 0x1) == 0x0) {
-        *block += next_tag; 
-        *((size_t *) ((void *) end + next_tag) - 1) += size;
+        size += next_tag;
+        end = (void *) end + next_tag;
+        *block = *(end - 1) = size;
     }
 }
