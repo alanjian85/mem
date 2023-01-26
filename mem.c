@@ -6,8 +6,9 @@
 
 static size_t *heap_start, *heap_end;
 
+// n must be a power of two
 static inline size_t align(size_t x, size_t n) {
-    size_t rem = x % n;
+    size_t rem = x & (n - 1);
     if (rem != 0)
         x += n - rem;
     return x;
